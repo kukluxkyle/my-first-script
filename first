@@ -1,0 +1,201 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Creating the main window
+local Window = Rayfield:CreateWindow({
+   Name = "NPC Hitbox Editor",
+   LoadingTitle = "Rayfield Interface Suite",
+   LoadingSubtitle = "by Sirius",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil, -- Custom folder for your hub/game
+      FileName = "HitboxEditorConfig"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "noinvitelink",
+      RememberJoins = true
+   },
+   KeySystem = false,
+   KeySettings = {
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided",
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"Hello"}
+   }
+})
+
+-- Variables for hitbox settings
+local npcFolder = workspace:FindFirstChild("Killers")
+local newSize = Vector3.new(3, 3, 3) -- Initial head size
+local newTransparency = 0.5 -- Initial transparency
+
+-- Function to expand the hitbox on the Head of each NPC
+local function expandHitboxes()
+    if npcFolder then
+        for _, npc in ipairs(npcFolder:GetChildren()) do
+            local head = npc:FindFirstChild("Head")
+            if head then
+                head.Size = newSize
+                head.Transparency = newTransparency
+                head.CanCollide = false -- Disable collision to prevent sticking
+            end
+        end
+    else
+        warn("NPC folder 'Killers' not found in workspace.")
+    end
+end
+
+-- Create a loop to update hitboxes every second
+while true do
+    expandHitboxes()
+    wait(1) -- Wait for 1 second before the next update
+end
+
+-- Creating a tab for hitbox settings
+local HitboxTab = Window:CreateTab("Hitbox Settings", 4483362458)
+
+-- Add sliders for size and transparency
+local SizeXSlider = HitboxTab:CreateSlider({
+    Name = "Size X",
+    Range = {1, 10}, -- Size range
+    Increment = 1,
+    Suffix = "units",
+    CurrentValue = newSize.X,
+    Flag = "SizeX",
+    Callback = function(Value)
+        newSize = Vector3.new(Value, newSize.Y, newSize.Z)
+    end,
+})
+
+local SizeYSlider = HitboxTab:CreateSlider({
+    Name = "Size Y",
+    Range = {1, 10},
+    Increment = 1,
+    Suffix = "units",
+    CurrentValue = newSize.Y,
+    Flag = "SizeY",
+    Callback = function(Value)
+        newSize = Vector3.new(newSize.X, Value, newSize.Z)
+    end,
+})
+
+local SizeZSlider = HitboxTab:CreateSlider({
+    Name = "Size Z",
+    Range = {1, 10},
+    Increment = 1,
+    Suffix = "units",
+    CurrentValue = newSize.Z,
+    Flag = "SizeZ",
+    Callback = function(Value)
+        newSize = Vector3.new(newSize.X, newSize.Y, Value)
+    end,
+})
+
+local TransparencySlider = HitboxTab:CreateSlider({
+    Name = "Transparency",
+    Range = {0, 1},
+    Increment = 0.1,
+    Suffix = "",
+    CurrentValue = newTransparency,
+    Flag = "Transparency",
+    Callback = function(Value)
+        newTransparency = Value
+    end,
+})
+
+-- Add a button to refresh hitboxes manually
+HitboxTab:CreateButton({
+    Name = "Refresh Hitboxes",
+    Callback = function()
+        expandHitboxes()
+        Rayfield:Notify({
+            Title = "Hitbox Refreshed",
+            Content = "Hitboxes have been refreshed!",
+            Duration = 4,
+            Image = 4483362458,
+        })
+    end,
+})
+
+-- Create a tab for teleporting to weapons
+local TeleportTab = Window:CreateTab("Teleport to Weapons", 4483362458)
+
+-- Weapon positions
+local weaponPositions = {
+    ["AK-47"] = Vector3.new(320.8999938964844, 272.6999816894531, 142.3000030517578),
+    ["AN-94"] = Vector3.new(156.5, 344.5, 607.4000244140625),
+    ["AWP"] = Vector3.new(70.69999694824219, 282.70001220703125, 29.700000762939453),
+    ["Colt Anaconda"] = Vector3.new(125.49996948242188, 344.8999938964844, 763.800048828125),
+    ["DB Shotgun"] = Vector3.new(-104.50003051757812, 314.5, 460.3999938964844),
+    ["Desert Eagle"] = Vector3.new(56.500003814697266, 293, 263.39996337890625),
+    ["Flamethrower"] = Vector3.new(466.199951171875, 313.3999938964844, 759.0999755859375),
+    ["G36C"] = Vector3.new(-148.5, 315, 280.3999938964844),
+    ["M1014"] = Vector3.new(148.1999969482422, 260.7000427246094, 327.10003662109375),
+    ["M14"] = Vector3.new(114.19999694824219, 325, 674.7000122070312),
+    ["M16A2/M203"] = Vector3.new(3.700000286102295, 269.20001220703125, 188.09999084472656),
+    ["M4A1"] = Vector3.new(377.9000244140625, 324.5, 652.3999933789062),
+    ["MP5k"] = Vector3.new(232.1999969482422, 374, 50.099998474121094),
+    ["P90"] = Vector3.new(-156.5, 304, 767.9000244140625),
+    ["R870"] = Vector3.new(137.1999969482422, 335, 502.0999755859375),
+    ["RayGun"] = Vector3.new(114.19999694824219, 337.0000305175781, 572.0999755859375),
+    ["SVD"] = Vector3.new(201.89999389648438, 303.5, 160.5),
+}
+
+-- Function to teleport player temporarily
+local function teleportToWeapon(player, weaponPosition)
+    local character = player.Character or player.CharacterAdded:Wait()
+    local originalPosition = character.HumanoidRootPart.Position -- Store original position
+
+    -- Teleport to weapon position
+    character:SetPrimaryPartCFrame(CFrame.new(weaponPosition))
+    
+    wait(2) -- Wait for 2 seconds
+    
+    -- Return to original position
+    character:SetPrimaryPartCFrame(CFrame.new(originalPosition))
+end
+
+-- Create buttons for each weapon
+for weaponName, position in pairs(weaponPositions) do
+    TeleportTab:CreateButton({
+        Name = "Teleport to " .. weaponName,
+        Callback = function()
+            local player = game.Players.LocalPlayer
+            teleportToWeapon(player, position) -- Call the teleport function
+            Rayfield:Notify({
+                Title = "Teleported",
+                Content = "You have been teleported to " .. weaponName .. " for 2 seconds.",
+                Duration = 4,
+                Image = 4483362458,
+            })
+        end,
+    })
+end
+
+-- Create a tab for settings
+local SettingsTab = Window:CreateTab("Settings", 4483362458)
+
+-- Add a button to destroy the GUI
+SettingsTab:CreateButton({
+    Name = "Destroy GUI",
+    Callback = function()
+        Rayfield:Destroy()
+        print("GUI destroyed")
+    end,
+})
+
+-- Function to handle GUI open and close with Left Shift
+local function onInputBegan(input, gameProcessed)
+    if not gameProcessed then
+        -- Check for LeftShift to toggle the GUI
+        if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.LeftShift then
+            Window:Toggle()
+        end
+    end
+end
+
+-- Connect the input began event
+game:GetService("UserInputService").InputBegan:Connect(onInputBegan)
